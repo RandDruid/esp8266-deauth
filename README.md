@@ -7,4 +7,8 @@ I used version 2.1.0-rc2 with edited user-interface.h. Basically I took declarat
 
 Project page on hackaday.io: https://hackaday.io/project/9333-weekend-on-the-dark-side
 
-Disclaimer: I am not pretending to create ultimate final solution. It works, in general, on devices I have tested. Main problem is to cover 14 channels with one RF module. But I hope this code can give you a quick start for your own experiments.
+Disclaimer: I am not pretending to create ultimate final solution. It works, in general, on devices I have tested. Main problem is to cover 14 channels with one RF module (*). But I hope this code can give you a quick start for your own experiments.
+
+*) Possible solution here: (project with 2 modules - https://github.com/RandDruid/esp8266-deauth2
+
+Project page on hackaday.io: https://hackaday.io/project/9333-weekend-on-the-dark-side
