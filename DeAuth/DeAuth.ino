@@ -16,6 +16,10 @@ extern "C" {
 #define WHITELIST_LENGTH 2
 uint8_t whitelist[WHITELIST_LENGTH][ETH_MAC_LEN] = { { 0x77, 0xEA, 0x3A, 0x8D, 0xA7, 0xC8 }, {  0x40, 0x65, 0xA4, 0xE0, 0x24, 0xDF } };
 
+// Declare to whitelist STATIONs ONLY, otherwise STATIONs and APs can be whitelisted
+// If AP is whitelisted, all its clients become automatically whitelisted
+//#define WHITELIST_STATION 
+
 // Channel to perform deauth
 uint8_t channel = 0;
 
@@ -58,6 +62,7 @@ clientinfo clients_known[MAX_CLIENTS_TRACKED];            // Array to save MACs 
 int clients_known_count = 0;                              // Number of known CLIENTs
 
 bool friendly_device_found = false;
+uint8_t *address_to_check;
 
 struct beaconinfo parse_beacon(uint8_t *frame, uint16_t framelen, signed rssi)
 {
@@ -418,8 +423,13 @@ void loop() {
           if (aps_known[ua].channel == channel) {
             for (int uc = 0; uc < clients_known_count; uc++) {
               if (! memcmp(aps_known[ua].bssid, clients_known[uc].bssid, ETH_MAC_LEN)) {
-                friendly_device_found = check_whitelist(clients_known[uc].station);
-                if (friendly_device_found) {
+#ifdef WHITELIST_STATION
+                address_to_check = clients_known[uc].station;
+#else
+                address_to_check = clients_known[uc].ap;
+#endif
+                if (check_whitelist(address_to_check)) {
+                  friendly_device_found = true;
                   Serial.print("Whitelisted -->");
                   print_client(clients_known[uc]);
                 } else {
@@ -431,6 +441,7 @@ void loop() {
               }
             }
             if (!friendly_device_found) deauth(broadcast2, aps_known[ua].bssid, 128);
+            friendly_device_found = false;
           }
         }
         wifi_promiscuous_enable(0);
