@@ -387,7 +387,7 @@ void promisc_cb(uint8_t *buf, uint16_t len)
 bool check_whitelist(uint8_t *macAdress){
   unsigned int i=0;
   for (i=0; i<WHITELIST_LENGTH; i++) {
-    if (memcmp(macAdress, whitelist[i], ETH_MAC_LEN)) return true;
+    if (! memcmp(macAdress, whitelist[i], ETH_MAC_LEN)) return true;
   }
   return false;
 }
